@@ -1,0 +1,6 @@
+*.class
+*.ser
+/build/
+/dist/
+nbproject/private/
+.idea/
