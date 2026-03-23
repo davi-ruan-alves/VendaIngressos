@@ -5,11 +5,11 @@
  */
 package venda_ingresso.services;
 
+import java.util.ArrayList;
 import venda_ingresso.entities.Ingresso;
+import venda_ingresso.enums.SetorEnum;
 import venda_ingresso.exceptions.QuantidadeInvalidaException;
 import venda_ingresso.exceptions.SetorEsgotadoException;
-
-import java.util.ArrayList;
 
 /**
  *
@@ -25,11 +25,10 @@ public class GerenciadorIngresso {
         ingressos = new ArrayList<>();
     }
     
-    public boolean comprarIngresso(Ingresso ingresso) {
+    public synchronized boolean comprarIngresso(Ingresso ingresso) {
 
 
         int totalVendidoSetor = 0;
-        int contadorSetor = 0;
         if (ingresso == null) {
             return false;
         }
@@ -39,22 +38,22 @@ public class GerenciadorIngresso {
         }
 
         for (Ingresso ingressoExistente : ingressos) {
-
-            if (ingressoExistente.getSetor().equals(ingresso.getSetor())) {
-                contadorSetor++;
-            }
-
-        }
-        for (Ingresso ingressoExistente : ingressos) {
             if (ingressoExistente.getSetor().equals(ingresso.getSetor())) {
                 totalVendidoSetor += ingressoExistente.getQuantidade();
             }
         }
-        if (totalVendidoSetor + ingresso.getQuantidade() > 10) {
+        // Obtém o limite máximo do setor usando o enum
+        SetorEnum setorEnum = SetorEnum.valueOf(ingresso.getSetor().toUpperCase());
+        int limiteMaximoSetor = setorEnum.getLimiteMaximoIngressos();
+        
+        if (totalVendidoSetor + ingresso.getQuantidade() > limiteMaximoSetor) {
             throw new SetorEsgotadoException("Erro: Setor Esgotado");
         }
 
         ingresso.setCodigo(++prox);
+        
+        // Registra o nome da thread que processou o ingresso
+        ingresso.setThreadOrigem(Thread.currentThread().getName());
 
         ingressos.add(ingresso);
 
@@ -64,7 +63,7 @@ public class GerenciadorIngresso {
     }
     
     //Retorna os ingressos adquiridos
-    public ArrayList<Ingresso> getIngressos() {
+    public synchronized ArrayList<Ingresso> getIngressos() {
         return ingressos;
     }
     
